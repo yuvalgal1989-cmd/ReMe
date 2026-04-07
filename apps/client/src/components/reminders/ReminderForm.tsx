@@ -48,7 +48,7 @@ export default function ReminderForm({ open, onClose, existing }: Props) {
 
   useEffect(() => {
     if (existing) {
-      const localDt = toISOLocal(new Date(existing.due_at * 1000));
+      const localDt = toISOLocal(existing.due_at ? new Date(existing.due_at * 1000) : new Date());
       setTitle(existing.title);
       setDescription(existing.description || '');
       setCategory(existing.category);

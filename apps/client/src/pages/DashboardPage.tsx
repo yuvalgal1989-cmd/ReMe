@@ -8,65 +8,73 @@ import ReminderForm from '../components/reminders/ReminderForm';
 import GoogleConnect from '../components/calendar/GoogleConnect';
 import { useAuthStore } from '../store/authStore';
 
-const YEARLY_CATEGORIES = new Set(['birthday', 'anniversary']);
+const now = () => Math.floor(Date.now() / 1000);
 
 export default function DashboardPage() {
   const user = useAuthStore((s) => s.user);
   const [creating, setCreating] = useState(false);
 
-  // Due in next 24 hours
+  // ── Regular reminders (NOT birthday/anniversary) ──────────────────────────
+
   const { data: upcoming = [] } = useQuery<Reminder[]>({
-    queryKey: ['reminders', 'upcoming-dashboard'],
+    queryKey: ['reminders', 'upcoming-24h'],
     queryFn: () => remindersApi.upcoming(24),
   });
 
-  // Active reminders this week
   const { data: thisWeek = [] } = useQuery<Reminder[]>({
     queryKey: ['reminders', 'this-week'],
     queryFn: () => remindersApi.list({
       status: 'active',
-      from: Math.floor(Date.now() / 1000),
-      to: Math.floor(Date.now() / 1000) + 7 * 86400,
+      from: now(),
+      to: now() + 7 * 86400,
       limit: 50,
     }),
   });
 
-  // Yearly events (birthdays, anniversaries) coming up in next 30 days
-  const { data: yearlyRaw = [] } = useQuery<Reminder[]>({
-    queryKey: ['reminders', 'yearly-upcoming'],
+  // ── Yearly events — fetched separately by category ────────────────────────
+
+  const { data: birthdays = [] } = useQuery<Reminder[]>({
+    queryKey: ['reminders', 'birthdays'],
     queryFn: () => remindersApi.list({
       status: 'active',
-      from: Math.floor(Date.now() / 1000),
-      to: Math.floor(Date.now() / 1000) + 30 * 86400,
+      category: 'birthday',
+      from: now(),
+      to: now() + 30 * 86400,
       limit: 50,
     }),
   });
 
-  // ── Separate yearly events from regular ones ───────────────────────────────
-  const upcomingIds = new Set(upcoming.map((r) => r.id));
+  const { data: anniversaries = [] } = useQuery<Reminder[]>({
+    queryKey: ['reminders', 'anniversaries'],
+    queryFn: () => remindersApi.list({
+      status: 'active',
+      category: 'anniversary',
+      from: now(),
+      to: now() + 30 * 86400,
+      limit: 50,
+    }),
+  });
 
-  // Yearly = birthday / anniversary (or any yearly rrule)
-  const isYearly = (r: Reminder) =>
-    YEARLY_CATEGORIES.has(r.category) || r.rrule === 'FREQ=YEARLY';
-
-  const yearlyEvents = yearlyRaw
-    .filter(isYearly)
-    .filter((r, i, arr) => arr.findIndex((x) => x.id === r.id) === i); // dedupe
+  // Combine + deduplicate yearly events
+  const yearlyEvents = [...birthdays, ...anniversaries]
+    .filter((r, i, arr) => arr.findIndex((x) => x.id === r.id) === i);
 
   const yearlyIds = new Set(yearlyEvents.map((r) => r.id));
 
-  // Regular overdue — exclude yearly
+  // ── Filter regular sections — exclude any yearly events ───────────────────
+
+  const upcomingRegular = upcoming.filter((r) => !yearlyIds.has(r.id));
+  const upcomingIds = new Set(upcomingRegular.map((r) => r.id));
+
   const overdue = thisWeek.filter(
-    (r) => isOverdue(r.due_at) && !upcomingIds.has(r.id) && !yearlyIds.has(r.id)
+    (r) => isOverdue(r.due_at) && !yearlyIds.has(r.id) && !upcomingIds.has(r.id)
   );
 
-  // Regular due in 24h — exclude yearly
-  const upcomingRegular = upcoming.filter((r) => !yearlyIds.has(r.id));
-
-  // Coming up this week — exclude yearly and already shown
   const weekItems = thisWeek
-    .filter((r) => !isOverdue(r.due_at) && !upcomingIds.has(r.id) && !yearlyIds.has(r.id))
+    .filter((r) => !isOverdue(r.due_at) && !yearlyIds.has(r.id) && !upcomingIds.has(r.id))
     .slice(0, 5);
+
+  // ── Greeting ──────────────────────────────────────────────────────────────
 
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
@@ -76,6 +84,7 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
+
       {/* Greeting */}
       <div className="flex items-center justify-between">
         <div>
@@ -95,13 +104,13 @@ export default function DashboardPage() {
       {/* Stats */}
       <div className="grid grid-cols-3 gap-4">
         {[
-          { label: 'Due Today', value: upcomingRegular.length, color: upcomingRegular.length > 0 ? 'text-red-600' : 'text-green-600' },
-          { label: 'This Week', value: weekItems.length + upcomingRegular.length, color: 'text-blue-600' },
-          { label: 'Overdue', value: overdue.length, color: overdue.length > 0 ? 'text-red-600' : 'text-gray-400' },
-        ].map((stat) => (
-          <div key={stat.label} className="card text-center">
-            <div className={`text-3xl font-bold ${stat.color}`}>{stat.value}</div>
-            <div className="text-sm text-gray-500 mt-1">{stat.label}</div>
+          { label: 'Due Today',  value: upcomingRegular.length, color: upcomingRegular.length > 0 ? 'text-red-600' : 'text-green-600' },
+          { label: 'This Week',  value: weekItems.length + upcomingRegular.length, color: 'text-blue-600' },
+          { label: 'Overdue',    value: overdue.length, color: overdue.length > 0 ? 'text-red-600' : 'text-gray-400' },
+        ].map((s) => (
+          <div key={s.label} className="card text-center">
+            <div className={`text-3xl font-bold ${s.color}`}>{s.value}</div>
+            <div className="text-sm text-gray-500 mt-1">{s.label}</div>
           </div>
         ))}
       </div>
@@ -118,11 +127,11 @@ export default function DashboardPage() {
         </section>
       )}
 
-      {/* Due in 24h — regular only */}
+      {/* Due in 24h */}
       {upcomingRegular.length > 0 && (
         <section>
           <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
-            🔔 Due in 24 hours ({upcomingRegular.length})
+            🔔 Due in 24 Hours ({upcomingRegular.length})
           </h2>
           <div className="space-y-3">
             {upcomingRegular.map((r) => <ReminderCard key={r.id} reminder={r} />)}
@@ -130,7 +139,7 @@ export default function DashboardPage() {
         </section>
       )}
 
-      {/* Coming up this week — regular only */}
+      {/* This week */}
       {weekItems.length > 0 && (
         <section>
           <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
@@ -142,12 +151,17 @@ export default function DashboardPage() {
         </section>
       )}
 
-      {/* Yearly events — birthdays, anniversaries, etc. */}
+      {/* Birthdays & Anniversaries — always separate */}
       {yearlyEvents.length > 0 && (
         <section>
-          <h2 className="text-sm font-semibold text-pink-600 uppercase tracking-wide mb-3">
-            🎂 Birthdays & Anniversaries — Next 30 Days ({yearlyEvents.length})
-          </h2>
+          <div className="flex items-center gap-2 mb-3">
+            <h2 className="text-sm font-semibold text-pink-600 uppercase tracking-wide">
+              🎂 Birthdays & Anniversaries
+            </h2>
+            <span className="text-xs bg-pink-100 text-pink-600 px-2 py-0.5 rounded-full">
+              Next 30 days
+            </span>
+          </div>
           <div className="space-y-3">
             {yearlyEvents.map((r) => <ReminderCard key={r.id} reminder={r} />)}
           </div>
