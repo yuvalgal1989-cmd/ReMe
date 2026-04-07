@@ -88,6 +88,7 @@ export default function ReminderForm({ open, onClose, existing }: Props) {
       existing ? remindersApi.update(existing.id, data) : remindersApi.create(data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['reminders'] });
+      qc.refetchQueries({ queryKey: ['reminders'] });
       onClose();
     },
   });

@@ -40,8 +40,10 @@ export default function DashboardPage() {
 
   // ── Yearly events for the current month ───────────────────────────────────
 
+  const monthKey = `${today.getFullYear()}-${today.getMonth()}`;
+
   const { data: birthdaysMonth = [] } = useQuery<Reminder[]>({
-    queryKey: ['reminders', 'birthdays-month'],
+    queryKey: ['reminders', 'birthdays-month', monthKey],
     queryFn: () => remindersApi.list({
       status: 'active',
       category: 'birthday',
@@ -49,10 +51,11 @@ export default function DashboardPage() {
       to: Math.floor(monthEnd.getTime() / 1000),
       limit: 50,
     }),
+    staleTime: 0,
   });
 
   const { data: anniversariesMonth = [] } = useQuery<Reminder[]>({
-    queryKey: ['reminders', 'anniversaries-month'],
+    queryKey: ['reminders', 'anniversaries-month', monthKey],
     queryFn: () => remindersApi.list({
       status: 'active',
       category: 'anniversary',
@@ -60,6 +63,7 @@ export default function DashboardPage() {
       to: Math.floor(monthEnd.getTime() / 1000),
       limit: 50,
     }),
+    staleTime: 0,
   });
 
   // Combine + deduplicate this month's yearly events
