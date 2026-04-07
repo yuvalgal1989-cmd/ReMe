@@ -1,7 +1,7 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.reme.app',
+  appId: 'com.nissani.reme',
   appName: 'ReMe',
   webDir: 'dist',
   server: {

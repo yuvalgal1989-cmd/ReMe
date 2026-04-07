@@ -18,6 +18,10 @@ lsof -ti:3001 | xargs kill -9 2>/dev/null && ok "Backend stopped." || log "Backe
 log "Stopping frontend (port 5173)..."
 lsof -ti:5173 | xargs kill -9 2>/dev/null && ok "Frontend stopped." || log "Frontend was not running."
 
+# ── Close Simulator ───────────────────────────────────────────────────────────
+log "Closing Simulator..."
+osascript -e 'tell application "Simulator" to quit' 2>/dev/null && ok "Simulator closed." || log "Simulator was not open."
+
 # ── Close Xcode ───────────────────────────────────────────────────────────────
 log "Closing Xcode..."
 osascript -e 'tell application "Xcode" to quit' 2>/dev/null && ok "Xcode closed." || log "Xcode was not open."

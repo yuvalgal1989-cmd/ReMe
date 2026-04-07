@@ -45,7 +45,17 @@ router.get('/free-slots', async (req: Request, res: Response) => {
   }
 });
 
-// POST /api/calendar/import - import GCal events as reminders
+// GET /api/calendar/imported-ids - return gcal event IDs already imported for this user
+router.get('/imported-ids', (req: Request, res: Response) => {
+  const user = (req as any).user as User;
+  const { db } = require('../db/database');
+  const rows = db
+    .prepare(`SELECT gcal_event_id FROM reminders WHERE user_id = ? AND gcal_event_id IS NOT NULL AND status != 'archived'`)
+    .all(user.id) as { gcal_event_id: string }[];
+  res.json({ ids: rows.map((r) => r.gcal_event_id) });
+});
+
+// POST /api/calendar/import - import GCal events as reminders (skips already imported)
 router.post('/import', async (req: Request, res: Response) => {
   const user = (req as any).user as User;
   if (!user.google_refresh_token) {
@@ -58,12 +68,22 @@ router.post('/import', async (req: Request, res: Response) => {
   const to = new Date(Date.now() + 90 * 86400 * 1000);
 
   try {
+    const { db } = require('../db/database');
+    // Get already-imported gcal event IDs
+    const existingRows = db
+      .prepare(`SELECT gcal_event_id FROM reminders WHERE user_id = ? AND gcal_event_id IS NOT NULL AND status != 'archived'`)
+      .all(user.id) as { gcal_event_id: string }[];
+    const existingIds = new Set(existingRows.map((r) => r.gcal_event_id));
+
     const events = await gcal.listCalendarEvents(user.id, from, to);
-    const toImport = event_ids
+    const toImport = (event_ids
       ? events.filter((e) => event_ids.includes(e.id!))
-      : events;
+      : events
+    ).filter((e) => e.id && !existingIds.has(e.id)); // skip duplicates
 
     const imported: any[] = [];
+    const skipped: string[] = [];
+
     for (const event of toImport) {
       if (!event.start?.dateTime && !event.start?.date) continue;
       const startStr = event.start.dateTime || event.start.date;
@@ -86,7 +106,12 @@ router.post('/import', async (req: Request, res: Response) => {
       imported.push(reminder);
     }
 
-    res.json({ imported: imported.length, reminders: imported });
+    // Count skipped (requested but already exist)
+    if (event_ids) {
+      event_ids.forEach((id) => { if (existingIds.has(id)) skipped.push(id); });
+    }
+
+    res.json({ imported: imported.length, skipped: skipped.length, reminders: imported });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }

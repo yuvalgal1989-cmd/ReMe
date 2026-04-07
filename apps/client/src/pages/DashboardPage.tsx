@@ -27,8 +27,10 @@ export default function DashboardPage() {
     }),
   });
 
-  const overdue = thisWeek.filter((r) => isOverdue(r.due_at));
-  const todayItems = thisWeek.filter((r) => !isOverdue(r.due_at)).slice(0, 5);
+  // Deduplicate by id across both queries
+  const upcomingIds = new Set(upcoming.map((r) => r.id));
+  const overdue = thisWeek.filter((r) => isOverdue(r.due_at) && !upcomingIds.has(r.id));
+  const todayItems = thisWeek.filter((r) => !isOverdue(r.due_at) && !upcomingIds.has(r.id)).slice(0, 5);
 
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';

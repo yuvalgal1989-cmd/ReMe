@@ -11,6 +11,9 @@ export const calendarApi = {
   importEvents: (event_ids?: string[]) =>
     api.post('/calendar/import', { event_ids }).then((r) => r.data),
 
+  importedIds: () =>
+    api.get<{ ids: string[] }>('/calendar/imported-ids').then((r) => r.data.ids),
+
   pushReminder: (reminder_id: number) =>
     api.post('/calendar/push', { reminder_id }).then((r) => r.data),
 };

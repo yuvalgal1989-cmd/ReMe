@@ -3,18 +3,38 @@
 @tailwind utilities;
 
 @layer base {
-  body {
-    @apply bg-gray-50 text-gray-900 antialiased;
-    /* Prevent overscroll bounce on iOS */
-    overscroll-behavior: none;
+  html {
+    /* Fluid base font: scales from 14px on small phones to 16px on large ones */
+    font-size: clamp(14px, 3.8vw, 16px);
+    height: 100%;
   }
 
-  /* Respect iPhone notch and home indicator */
+  body {
+    @apply bg-white text-gray-900 antialiased;
+    overscroll-behavior: none;
+    min-height: 100%;
+    width: 100%;
+    /* Fill status bar and home indicator areas with white — no black bars */
+    background-color: white;
+  }
+
+  #root {
+    min-height: 100vh;
+    min-height: 100dvh; /* dynamic viewport height — accounts for Safari toolbar */
+    width: 100%;
+  }
+
+  /* Respect notch, Dynamic Island, and home indicator on every iPhone */
   :root {
     --safe-top: env(safe-area-inset-top, 0px);
     --safe-bottom: env(safe-area-inset-bottom, 0px);
     --safe-left: env(safe-area-inset-left, 0px);
     --safe-right: env(safe-area-inset-right, 0px);
+  }
+
+  /* Larger tap targets on touch screens */
+  button, a, input, select, textarea {
+    touch-action: manipulation;
   }
 }
 

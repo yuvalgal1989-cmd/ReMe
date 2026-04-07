@@ -25,10 +25,13 @@ export default function ReminderList() {
   const [category, setCategory] = useState('');
   const [creating, setCreating] = useState(false);
 
-  const { data: reminders = [], isLoading } = useQuery<Reminder[]>({
+  const { data: raw = [], isLoading } = useQuery<Reminder[]>({
     queryKey: ['reminders', { status, category }],
     queryFn: () => remindersApi.list({ ...(status ? { status } : {}), ...(category ? { category } : {}) }),
   });
+
+  // Deduplicate by id
+  const reminders = raw.filter((r, i, arr) => arr.findIndex((x) => x.id === r.id) === i);
 
   return (
     <div>

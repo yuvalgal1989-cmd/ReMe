@@ -79,8 +79,8 @@ if [ "$FRONTEND_OK" != "200" ]; then
 fi
 
 # ── Sync Capacitor and open Xcode ─────────────────────────────────────────────
-log "Syncing Capacitor..."
-cd "$ROOT/apps/client" && npx cap sync ios --inline 2>&1
+log "Syncing Capacitor to Xcode..."
+cd "$ROOT/apps/client" && npx cap sync ios 2>&1
 
 ok "Opening Xcode..."
 npx cap open ios

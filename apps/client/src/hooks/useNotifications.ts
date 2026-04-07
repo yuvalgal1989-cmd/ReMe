@@ -6,9 +6,12 @@ import { CATEGORY_ICONS } from '../types';
 
 const notifiedIds = new Set<number>();
 
+// Browser Notification API is not available in iOS WebView (Capacitor)
+const notificationsSupported = typeof window !== 'undefined' && 'Notification' in window;
+
 export function useNotifications() {
   const requestPermission = useCallback(async () => {
-    if ('Notification' in window && Notification.permission === 'default') {
+    if (notificationsSupported && Notification.permission === 'default') {
       await Notification.requestPermission();
     }
   }, []);
@@ -16,11 +19,12 @@ export function useNotifications() {
   const { data: upcoming = [] } = useQuery<Reminder[]>({
     queryKey: ['reminders', 'upcoming'],
     queryFn: () => remindersApi.upcoming(1),
-    refetchInterval: 60000, // poll every minute
-    enabled: typeof window !== 'undefined' && 'Notification' in window,
+    refetchInterval: 60000,
+    enabled: notificationsSupported,
   });
 
   useEffect(() => {
+    if (!notificationsSupported) return;
     if (Notification.permission !== 'granted') return;
 
     for (const reminder of upcoming) {
@@ -38,5 +42,7 @@ export function useNotifications() {
     }
   }, [upcoming]);
 
-  return { requestPermission, permissionGranted: typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted' };
+  const permissionGranted = notificationsSupported && Notification.permission === 'granted';
+
+  return { requestPermission, permissionGranted };
 }
