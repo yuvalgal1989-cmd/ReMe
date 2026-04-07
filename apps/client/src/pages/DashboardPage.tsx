@@ -15,7 +15,13 @@ export default function DashboardPage() {
   const user = useAuthStore((s) => s.user);
   const [creating, setCreating] = useState(false);
 
-  // ── Regular reminders (NOT birthday/anniversary) ──────────────────────────
+  // Current month boundaries
+  const today = new Date();
+  const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+  const monthEnd   = new Date(today.getFullYear(), today.getMonth() + 1, 0, 23, 59, 59);
+  const monthName  = today.toLocaleDateString('en-US', { month: 'long' });
+
+  // ── Regular reminders ─────────────────────────────────────────────────────
 
   const { data: upcoming = [] } = useQuery<Reminder[]>({
     queryKey: ['reminders', 'upcoming-24h'],
@@ -32,37 +38,36 @@ export default function DashboardPage() {
     }),
   });
 
-  // ── Yearly events — fetched separately by category ────────────────────────
+  // ── Yearly events for the current month ───────────────────────────────────
 
-  const { data: birthdays = [] } = useQuery<Reminder[]>({
-    queryKey: ['reminders', 'birthdays'],
+  const { data: birthdaysMonth = [] } = useQuery<Reminder[]>({
+    queryKey: ['reminders', 'birthdays-month'],
     queryFn: () => remindersApi.list({
       status: 'active',
       category: 'birthday',
-      from: now(),
-      to: now() + 30 * 86400,
+      from: Math.floor(monthStart.getTime() / 1000),
+      to: Math.floor(monthEnd.getTime() / 1000),
       limit: 50,
     }),
   });
 
-  const { data: anniversaries = [] } = useQuery<Reminder[]>({
-    queryKey: ['reminders', 'anniversaries'],
+  const { data: anniversariesMonth = [] } = useQuery<Reminder[]>({
+    queryKey: ['reminders', 'anniversaries-month'],
     queryFn: () => remindersApi.list({
       status: 'active',
       category: 'anniversary',
-      from: now(),
-      to: now() + 30 * 86400,
+      from: Math.floor(monthStart.getTime() / 1000),
+      to: Math.floor(monthEnd.getTime() / 1000),
       limit: 50,
     }),
   });
 
-  // Combine + deduplicate yearly events
-  const yearlyEvents = [...birthdays, ...anniversaries]
-    .filter((r, i, arr) => arr.findIndex((x) => x.id === r.id) === i);
+  // Combine + deduplicate this month's yearly events
+  const yearlyThisMonth = [...birthdaysMonth, ...anniversariesMonth]
+    .filter((r, i, arr) => arr.findIndex((x) => x.id === r.id) === i)
+    .sort((a, b) => a.due_at - b.due_at);
 
-  const yearlyIds = new Set(yearlyEvents.map((r) => r.id));
-
-  // ── Filter regular sections — always exclude by category directly ─────────
+  // ── Filters — always exclude yearly by category ───────────────────────────
 
   const isYearly = (r: Reminder) => YEARLY_CATEGORIES.has(r.category);
 
@@ -79,11 +84,11 @@ export default function DashboardPage() {
 
   // ── Greeting ──────────────────────────────────────────────────────────────
 
-  const hour = new Date().getHours();
+  const hour = today.getHours();
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
 
   const hasAnything = overdue.length > 0 || upcomingRegular.length > 0 ||
-    weekItems.length > 0 || yearlyEvents.length > 0;
+    weekItems.length > 0 || yearlyThisMonth.length > 0;
 
   return (
     <div className="space-y-6">
@@ -95,7 +100,7 @@ export default function DashboardPage() {
             {greeting}{user?.name ? `, ${user.name.split(' ')[0]}` : ''}!
           </h1>
           <p className="text-gray-500 text-sm mt-0.5">
-            {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+            {today.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -107,9 +112,9 @@ export default function DashboardPage() {
       {/* Stats */}
       <div className="grid grid-cols-3 gap-4">
         {[
-          { label: 'Due Today',  value: upcomingRegular.length, color: upcomingRegular.length > 0 ? 'text-red-600' : 'text-green-600' },
-          { label: 'This Week',  value: weekItems.length + upcomingRegular.length, color: 'text-blue-600' },
-          { label: 'Overdue',    value: overdue.length, color: overdue.length > 0 ? 'text-red-600' : 'text-gray-400' },
+          { label: 'Due Today', value: upcomingRegular.length, color: upcomingRegular.length > 0 ? 'text-red-600' : 'text-green-600' },
+          { label: 'This Week', value: weekItems.length + upcomingRegular.length, color: 'text-blue-600' },
+          { label: 'Overdue',   value: overdue.length, color: overdue.length > 0 ? 'text-red-600' : 'text-gray-400' },
         ].map((s) => (
           <div key={s.label} className="card text-center">
             <div className={`text-3xl font-bold ${s.color}`}>{s.value}</div>
@@ -154,30 +159,35 @@ export default function DashboardPage() {
         </section>
       )}
 
-      {/* Birthdays & Anniversaries — always separate */}
-      {yearlyEvents.length > 0 && (
-        <section>
-          <div className="flex items-center gap-2 mb-3">
-            <h2 className="text-sm font-semibold text-pink-600 uppercase tracking-wide">
-              🎂 Birthdays & Anniversaries
-            </h2>
+      {/* Birthdays & Anniversaries this month */}
+      <section>
+        <div className="flex items-center gap-2 mb-3">
+          <h2 className="text-sm font-semibold text-pink-600 uppercase tracking-wide">
+            🎂 {monthName} — Birthdays & Anniversaries
+          </h2>
+          {yearlyThisMonth.length > 0 && (
             <span className="text-xs bg-pink-100 text-pink-600 px-2 py-0.5 rounded-full">
-              Next 30 days
+              {yearlyThisMonth.length}
             </span>
-          </div>
-          <div className="space-y-3">
-            {yearlyEvents.map((r) => <ReminderCard key={r.id} reminder={r} />)}
-          </div>
-        </section>
-      )}
+          )}
+        </div>
 
-      {/* Empty state */}
-      {!hasAnything && (
-        <div className="text-center py-16">
-          <div className="text-6xl mb-4">🎉</div>
-          <h2 className="text-xl font-semibold text-gray-700">All clear!</h2>
-          <p className="text-gray-400 mt-1">No upcoming reminders. Enjoy your day!</p>
-          <button className="btn-primary mt-4" onClick={() => setCreating(true)}>Add a reminder</button>
+        {yearlyThisMonth.length > 0 ? (
+          <div className="space-y-3">
+            {yearlyThisMonth.map((r) => <ReminderCard key={r.id} reminder={r} />)}
+          </div>
+        ) : (
+          <div className="card text-center py-6">
+            <p className="text-2xl mb-1">🎉</p>
+            <p className="text-sm text-gray-400">No birthdays or anniversaries in {monthName}</p>
+          </div>
+        )}
+      </section>
+
+      {/* Empty state — only when no sections at all */}
+      {!hasAnything && yearlyThisMonth.length === 0 && (
+        <div className="text-center py-8">
+          <button className="btn-primary" onClick={() => setCreating(true)}>Add a reminder</button>
         </div>
       )}
 
