@@ -1,0 +1,13 @@
+node_modules/
+apps/*/node_modules/
+client_secret_*.json
+.DS_Store
+**/.DS_Store
+apps/server/data/
+apps/server/dist/
+apps/client/dist/
+.env
+*.db
+*.db-journal
+*.db-wal
+*.db-shm

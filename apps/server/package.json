@@ -1,0 +1,44 @@
+{
+  "name": "reme-server",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "nodemon",
+    "start": "tsx src/index.ts",
+    "build": "tsc"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.81.0",
+    "better-sqlite3": "^12.8.0",
+    "connect-sqlite3": "^0.9.16",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.6",
+    "dotenv": "^17.3.1",
+    "express": "^5.2.1",
+    "express-session": "^1.19.0",
+    "googleapis": "^171.4.0",
+    "node-cron": "^4.2.1",
+    "nodemailer": "^8.0.4",
+    "rrule": "^2.8.1",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/connect-sqlite3": "^0.9.6",
+    "@types/cookie-parser": "^1.4.10",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/express-session": "^1.18.2",
+    "@types/node": "^25.5.0",
+    "@types/node-cron": "^3.0.11",
+    "@types/nodemailer": "^7.0.11",
+    "nodemon": "^3.1.14",
+    "tsx": "^4.21.0",
+    "typescript": "^6.0.2"
+  }
+}

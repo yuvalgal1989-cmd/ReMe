@@ -1,0 +1,12 @@
+{
+  "name": "reme",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev:server": "cd apps/server && npm run dev",
+    "dev:client": "cd apps/client && npm run dev",
+    "install:all": "cd apps/server && npm install && cd ../client && npm install",
+    "start:server": "cd apps/server && npm start",
+    "build:client": "cd apps/client && npm run build"
+  }
+}
