@@ -85,6 +85,43 @@ cd "$ROOT/apps/client" && npx cap sync ios --inline 2>&1
 ok "Opening Xcode..."
 npx cap open ios
 
+# ── Prevent Simulator from opening in its own separate Space ─────────────────
+defaults write com.apple.iphonesimulator SimulatorWindowLastScale -float 0.7 2>/dev/null || true
+
+# ── Wait for Xcode to open, then position Xcode left / Simulator right ────────
+log "Positioning windows..."
+sleep 4
+osascript <<'EOF'
+tell application "System Events"
+  -- Get screen size
+  set screenBounds to bounds of desktop 1 of (path to me)
+end tell
+
+tell application "Finder"
+  set screenBounds to bounds of window of desktop
+end tell
+
+set sw to item 3 of screenBounds -- screen width
+set sh to item 4 of screenBounds -- screen height
+set half to sw / 2
+
+-- Position Xcode on the left half
+tell application "Xcode"
+  activate
+  if (count of windows) > 0 then
+    set bounds of front window to {0, 25, half - 5, sh}
+  end if
+end tell
+
+-- Position Simulator on the right half (if already open)
+tell application "Simulator"
+  if (count of windows) > 0 then
+    set bounds of front window to {half + 5, 25, sw, sh}
+  end if
+end tell
+EOF
+
 ok "Done! Press ▶ Run in Xcode to launch the simulator."
+ok "Xcode → left half   |   Simulator → right half"
 ok "Simulator loads from: http://$CURRENT_IP:5173"
 warn "Google login only works in the browser (http://localhost:5173) — Google blocks private IPs in OAuth redirects."
