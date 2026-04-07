@@ -7,8 +7,16 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     var window: UIWindow?
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-        // Override point for customization after application launch.
+        // Set the window and WebView background to white so no black edges
+        // appear during scroll bounce or safe-area overscroll on any iPhone.
+        window?.backgroundColor = UIColor.white
         return true
+    }
+
+    func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+        webView.scrollView.backgroundColor = UIColor.white
+        webView.backgroundColor = UIColor.white
+        webView.isOpaque = false
     }
 
     func applicationWillResignActive(_ application: UIApplication) {

@@ -15,39 +15,38 @@ export default function AppShell() {
   const title = PAGE_TITLES[location.pathname] ?? 'ReMe';
 
   return (
-    <div className="flex flex-col w-full bg-gray-50" style={{ minHeight: '100dvh' }}>
+    <div
+      className="flex flex-col bg-white"
+      style={{ height: '100dvh', overflow: 'hidden' }}
+    >
+      {/* Status bar spacer */}
+      <div className="bg-white flex-shrink-0" style={{ height: 'var(--safe-top)' }} />
 
-      {/* Status bar fill — white block behind the notch/Dynamic Island */}
-      <div className="fixed top-0 inset-x-0 bg-white z-50"
-        style={{ height: 'var(--safe-top)' }} />
-
-      {/* Top header — sits just below the status bar fill */}
-      <header
-        className="sticky z-40 bg-white border-b border-gray-100 flex items-center justify-center px-4 w-full"
-        style={{ top: 'var(--safe-top)', height: '44px' }}
-      >
+      {/* Header — never moves, no fixed positioning */}
+      <header className="flex-shrink-0 bg-white border-b border-gray-100 flex items-center justify-center px-4 h-11">
         <h1 className="text-base font-semibold text-gray-900">{title}</h1>
       </header>
 
-      {/* Notification permission banner */}
+      {/* Notification banner */}
       {!permissionGranted && (
-        <div className="bg-amber-50 border-b border-amber-200 px-4 py-2 flex items-center justify-between">
+        <div className="flex-shrink-0 bg-amber-50 border-b border-amber-200 px-4 py-2 flex items-center justify-between">
           <span className="text-amber-800 text-xs">Enable notifications to get reminded on time.</span>
           <button onClick={requestPermission} className="btn-secondary text-xs ml-3 flex-shrink-0">Enable</button>
         </div>
       )}
 
-      {/* Page content */}
-      <main className="flex-1 overflow-auto w-full">
-        <div
-          className="px-4 pt-4 w-full max-w-2xl mx-auto"
-          style={{ paddingBottom: 'calc(var(--safe-bottom) + 72px)' }}
-        >
+      {/* Scrollable content — only this part scrolls */}
+      <main className="flex-1 overflow-y-auto overflow-x-hidden bg-gray-50">
+        <div className="px-4 pt-4 pb-4 w-full max-w-2xl mx-auto">
           <Outlet />
         </div>
       </main>
 
+      {/* Bottom tab bar — never moves */}
       <BottomTabBar />
+
+      {/* Home indicator spacer */}
+      <div className="bg-white flex-shrink-0" style={{ height: 'var(--safe-bottom)' }} />
     </div>
   );
 }

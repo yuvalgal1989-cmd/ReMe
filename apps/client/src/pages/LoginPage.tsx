@@ -25,7 +25,9 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 to-indigo-50 p-4">
+    <div className="flex items-center justify-center bg-gradient-to-br from-primary-50 to-indigo-50 p-4"
+      style={{ minHeight: '100dvh', paddingTop: 'calc(var(--safe-top) + 1rem)', paddingBottom: 'calc(var(--safe-bottom) + 1rem)' }}
+    >
       <div className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-sm">
         <div className="text-center mb-6">
           <div className="text-4xl mb-2">🔔</div>
