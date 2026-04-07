@@ -9,6 +9,7 @@ import GoogleConnect from '../components/calendar/GoogleConnect';
 import { useAuthStore } from '../store/authStore';
 
 const now = () => Math.floor(Date.now() / 1000);
+const YEARLY_CATEGORIES = new Set(['birthday', 'anniversary']);
 
 export default function DashboardPage() {
   const user = useAuthStore((s) => s.user);
@@ -61,17 +62,19 @@ export default function DashboardPage() {
 
   const yearlyIds = new Set(yearlyEvents.map((r) => r.id));
 
-  // ── Filter regular sections — exclude any yearly events ───────────────────
+  // ── Filter regular sections — always exclude by category directly ─────────
 
-  const upcomingRegular = upcoming.filter((r) => !yearlyIds.has(r.id));
+  const isYearly = (r: Reminder) => YEARLY_CATEGORIES.has(r.category);
+
+  const upcomingRegular = upcoming.filter((r) => !isYearly(r));
   const upcomingIds = new Set(upcomingRegular.map((r) => r.id));
 
   const overdue = thisWeek.filter(
-    (r) => isOverdue(r.due_at) && !yearlyIds.has(r.id) && !upcomingIds.has(r.id)
+    (r) => isOverdue(r.due_at) && !isYearly(r) && !upcomingIds.has(r.id)
   );
 
   const weekItems = thisWeek
-    .filter((r) => !isOverdue(r.due_at) && !yearlyIds.has(r.id) && !upcomingIds.has(r.id))
+    .filter((r) => !isOverdue(r.due_at) && !isYearly(r) && !upcomingIds.has(r.id))
     .slice(0, 5);
 
   // ── Greeting ──────────────────────────────────────────────────────────────
