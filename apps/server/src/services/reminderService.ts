@@ -68,11 +68,18 @@ export function getReminderById(id: number, userId: number): ReminderWithContact
   return row ? mapRow(row) : null;
 }
 
+function toUnix(val: unknown): number {
+  if (typeof val === 'number') return val;
+  if (typeof val === 'string') return Math.floor(new Date(val).getTime() / 1000);
+  return Math.floor(Date.now() / 1000);
+}
+
 export function createReminder(
   userId: number,
   data: Omit<Reminder, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'status' | 'snoozed_until'>
 ): Reminder {
   const now = Math.floor(Date.now() / 1000);
+  data = { ...data, due_at: toUnix(data.due_at) };
   const result = db
     .prepare(
       `INSERT INTO reminders
